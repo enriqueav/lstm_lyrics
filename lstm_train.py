@@ -27,7 +27,7 @@ import os
 SEQUENCE_LEN = 10
 MIN_WORD_FREQUENCY = 10
 STEP = 1
-BATCH_SIZE = 32
+BATCH_SIZE = 128
 SIMPLE_MODEL = True
 
 
@@ -44,7 +44,7 @@ def shuffle_and_split_training_set(sentences_original, next_original, percentage
     y = tmp_next_words
     print('Shuffling finished')
 
-    cut_index = int(len(sentences) * (1.-(percentage_test/100.)))
+    cut_index = int(len(sentences_original) * (1.-(percentage_test/100.)))
     x_train = x[:cut_index]
     y_train = y[:cut_index]
     x_test = x[cut_index:]
@@ -118,7 +118,7 @@ def on_epoch_end(epoch, logs):
     for diversity in [0.2, 0.5, 1.0, 1.2]:
         sentence = text_in_words[start_index: start_index + SEQUENCE_LEN]
         examples_file.write('----- Diversity:' + str(diversity) + '\n')
-        examples_file.write('----- Generating with seed: "' + ' '.join(sentence) + '"\n')
+        examples_file.write('----- Generating with seed:\n"' + ' '.join(sentence) + '"\n')
         examples_file.write(' '.join(sentence))
 
         for i in range(50):
@@ -161,14 +161,14 @@ if __name__ == "__main__":
     corpus = sys.argv[1]
     examples = sys.argv[2]
 
-    if not os.path.isdir('./checkpoints'):
-        os.makedirs('./checkpoints')
+    if not os.path.isdir('./checkpoints/s15/'):
+        os.makedirs('./checkpoints/s15/')
 
     with io.open(corpus, encoding='utf-8') as f:
-        text = f.read().lower()
+        text = f.read().lower().replace('\n', ' \n ')
     print('Corpus length in characters:', len(text))
 
-    text_in_words = [word for word in text.replace('\n', ' ').split(' ') if word.strip() != '']
+    text_in_words = [w for w in text.split(' ') if w.strip() != '' or w == '\n']
     print('Corpus length in words:', len(text_in_words))
 
     # Calculate word frequency
@@ -210,7 +210,7 @@ if __name__ == "__main__":
     model = get_model(SIMPLE_MODEL)
     model.compile(loss='categorical_crossentropy', optimizer="adam", metrics=['accuracy'])
 
-    file_path = "./checkpoints/LSTM_LYRICS_words%d_sequence%d_simple%r_minfreq%d_epoch{epoch:02d}_loss{loss:.4f}" % (
+    file_path = "./checkpoints/s15/LSTM_LYRICS_words%d_sequence%d_simple%r_minfreq%d_epoch{epoch:02d}_loss{loss:.4f}" % (
         len(words),
         SEQUENCE_LEN,
         SIMPLE_MODEL,
