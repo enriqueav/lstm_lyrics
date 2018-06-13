@@ -8,5 +8,5 @@ To start the training:
 ```bash
 git clone https://github.com/enriqueav/lstm_lyrics.git
 cd lstm_lyrics
-python3 lstm_train.py corpora/corpus_banda.txt nothing.txt
+python3 lstm_train.py corpora/corpus_banda.txt examples.txt
 ```
