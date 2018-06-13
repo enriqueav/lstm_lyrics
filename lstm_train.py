@@ -23,12 +23,11 @@ import sys
 import io
 import os
 
-# HARD-CODED parameters, change to experiment different configurations
+# Parameters: change to experiment different configurations
 SEQUENCE_LEN = 10
 MIN_WORD_FREQUENCY = 10
 STEP = 1
 BATCH_SIZE = 32
-SIMPLE_MODEL = True
 
 
 def shuffle_and_split_training_set(sentences_original, next_original, percentage_test=2):
@@ -36,24 +35,18 @@ def shuffle_and_split_training_set(sentences_original, next_original, percentage
     print('Shuffling sentences')
 
     tmp_sentences = []
-    tmp_next_words = []
+    tmp_next_word = []
     for i in np.random.permutation(len(sentences_original)):
         tmp_sentences.append(sentences_original[i])
-        tmp_next_words.append(next_original[i])
-    x = tmp_sentences
-    y = tmp_next_words
-    print('Shuffling finished')
+        tmp_next_word.append(next_original[i])
 
     cut_index = int(len(sentences_original) * (1.-(percentage_test/100.)))
-    x_train = x[:cut_index]
-    y_train = y[:cut_index]
-    x_test = x[cut_index:]
-    y_test = y[cut_index:]
+    x_train, x_test = tmp_sentences[:cut_index], tmp_sentences[cut_index:]
+    y_train, y_test = tmp_next_word[:cut_index], tmp_next_word[cut_index:]
 
     print("Size of training set = %d" % len(x_train))
     print("Size of test set = %d" % len(y_test))
-
-    return x_train, y_train, x_test, y_test
+    return (x_train, y_train), (x_test, y_test)
 
 
 # Data generator for fit and evaluate
@@ -63,35 +56,21 @@ def generator(sentence_list, next_word_list, batch_size):
         x = np.zeros((batch_size, SEQUENCE_LEN, len(words)), dtype=np.bool)
         y = np.zeros((batch_size, len(words)), dtype=np.bool)
         for i in range(batch_size):
-            for t, w in enumerate(sentence_list[index]):
+            for t, w in enumerate(sentence_list[index % len(sentence_list)]):
                 x[i, t, word_indices[w]] = 1
-            y[i, word_indices[next_word_list[index]]] = 1
-
+            y[i, word_indices[next_word_list[index % len(sentence_list)]]] = 1
             index = index + 1
-            if index == len(sentence_list):
-                index = 0
         yield x, y
 
 
-def get_model(simple=True, dropout=0.2):
+def get_model(dropout=0.2):
     print('Build model...')
     model = Sequential()
-
-    if simple:
-        model.add(Bidirectional(LSTM(128), input_shape=(SEQUENCE_LEN, len(words))))
-        if dropout > 0:
-            model.add(Dropout(dropout))
-        model.add(Dense(len(words)))
-        model.add(Activation('softmax'))
-    else:
-        model.add(Bidirectional(LSTM(256, return_sequences=True), input_shape=(SEQUENCE_LEN, len(words))))
-        if dropout > 0:
-            model.add(Dropout(dropout))
-        model.add(Bidirectional(LSTM(256, return_sequences=False), input_shape=(SEQUENCE_LEN, len(words))))
-        if dropout > 0:
-            model.add(Dropout(dropout))
-        model.add(Dense(len(words)))
-        model.add(Activation('softmax'))
+    model.add(Bidirectional(LSTM(128), input_shape=(SEQUENCE_LEN, len(words))))
+    if dropout > 0:
+        model.add(Dropout(dropout))
+    model.add(Dense(len(words)))
+    model.add(Activation('softmax'))
     return model
 
 
@@ -110,13 +89,11 @@ def on_epoch_end(epoch, logs):
     # Function invoked at end of each epoch. Prints generated text.
     examples_file.write('\n----- Generating text after Epoch: %d\n' % epoch)
 
-    # Randomly pick a seed sequence that does not contain words in ignored_words
-    start_index = random.randint(0, len(text_in_words) - SEQUENCE_LEN - 1)
-    while len(set(text_in_words[start_index: start_index + SEQUENCE_LEN]).intersection(ignored_words)) > 0:
-        start_index = random.randint(0, len(text_in_words) - SEQUENCE_LEN - 1)
+    # Randomly pick a seed sequence
+    seed_index = np.random.randint(len(sentences+sentences_test))
+    sentence = (sentences+sentences_test)[seed_index]
 
-    for diversity in [0.2, 0.5, 1.0, 1.2]:
-        sentence = text_in_words[start_index: start_index + SEQUENCE_LEN]
+    for diversity in [0.3, 0.4, 0.5, 0.6, 0.7]:
         examples_file.write('----- Diversity:' + str(diversity) + '\n')
         examples_file.write('----- Generating with seed:\n"' + ' '.join(sentence) + '"\n')
         examples_file.write(' '.join(sentence))
@@ -138,18 +115,8 @@ def on_epoch_end(epoch, logs):
     examples_file.write('='*80 + '\n')
     examples_file.flush()
 
-    # print accuracy evaluation
-    steps = int(len(sentences_test)/BATCH_SIZE)
-    scores = model.evaluate_generator(
-        generator(sentences_test, next_words_test, BATCH_SIZE),
-        steps=steps,
-        max_queue_size=1
-    )
-    print("Accuracy: %.2f%%" % (scores[1] * 100))
-
 
 if __name__ == "__main__":
-
     # Argument check
     if len(sys.argv) != 3:
         print('\033[91m' + 'Argument Error!\nUsage: python3 lstm_train.py <path_to_corpus> <examples_txt>' + '\033[0m')
@@ -205,25 +172,25 @@ if __name__ == "__main__":
     print('Remaining sequences:', len(sentences))
 
     # x, y, x_test, y_test
-    sentences, next_words, sentences_test, next_words_test = shuffle_and_split_training_set(sentences, next_words)
+    (sentences, next_words), (sentences_test, next_words_test) = shuffle_and_split_training_set(sentences, next_words)
 
-    model = get_model(SIMPLE_MODEL)
+    model = get_model()
     model.compile(loss='categorical_crossentropy', optimizer="adam", metrics=['accuracy'])
 
-    file_path = "./checkpoints/LSTM_LYRICS_words%d_sequence%d_simple%r_minfreq%d_epoch{epoch:02d}_loss{loss:.4f}" % (
+    file_path = "./checkpoints/LSTM_LYRICS-epoch{epoch:03d}-words%d-sequence%d-minfreq%d-loss{loss:.4f}-acc{acc:.4f}-val_loss{val_loss:.4f}-val_acc{val_acc:.4f}" % (
         len(words),
         SEQUENCE_LEN,
-        SIMPLE_MODEL,
         MIN_WORD_FREQUENCY
     )
-    checkpoint = ModelCheckpoint(file_path, save_best_only=False)
+    checkpoint = ModelCheckpoint(file_path, monitor='val_acc', save_best_only=True)
     print_callback = LambdaCallback(on_epoch_end=on_epoch_end)
-    early_stopping = EarlyStopping(monitor='loss', patience=5)
+    early_stopping = EarlyStopping(monitor='val_acc', patience=5)
     callbacks_list = [checkpoint, print_callback, early_stopping]
 
     examples_file = open(examples, "w")
     model.fit_generator(generator(sentences, next_words, BATCH_SIZE),
-                        steps_per_epoch=int(len(sentences)/BATCH_SIZE),
+                        steps_per_epoch=int(len(sentences)/BATCH_SIZE) + 1,
                         epochs=100,
-                        max_queue_size=1,
-                        callbacks=callbacks_list)
+                        callbacks=callbacks_list,
+                        validation_data=generator(sentences_test, next_words_test, BATCH_SIZE),
+                        validation_steps=int(len(sentences_test)/BATCH_SIZE) + 1)
