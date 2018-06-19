@@ -25,7 +25,7 @@ import os
 
 # Parameters: change to experiment different configurations
 SEQUENCE_LEN = 10
-MIN_WORD_FREQUENCY = 100
+MIN_WORD_FREQUENCY = 10
 STEP = 1
 BATCH_SIZE = 32
 
