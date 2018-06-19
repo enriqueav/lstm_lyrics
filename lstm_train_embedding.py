@@ -16,7 +16,7 @@ Saves the weights and model every epoch.
 from __future__ import print_function
 from keras.callbacks import LambdaCallback, ModelCheckpoint, EarlyStopping
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation, LSTM, Bidirectional
+from keras.layers import Dense, Dropout, Activation, LSTM, Bidirectional, Embedding
 import numpy as np
 import random
 import sys
@@ -25,7 +25,7 @@ import os
 
 # Parameters: change to experiment different configurations
 SEQUENCE_LEN = 10
-MIN_WORD_FREQUENCY = 100
+MIN_WORD_FREQUENCY = 10
 STEP = 1
 BATCH_SIZE = 32
 
@@ -53,12 +53,12 @@ def shuffle_and_split_training_set(sentences_original, next_original, percentage
 def generator(sentence_list, next_word_list, batch_size):
     index = 0
     while True:
-        x = np.zeros((batch_size, SEQUENCE_LEN, len(words)), dtype=np.bool)
-        y = np.zeros((batch_size, len(words)), dtype=np.bool)
+        x = np.zeros((batch_size, SEQUENCE_LEN), dtype=np.int32)
+        y = np.zeros((batch_size), dtype=np.int32)
         for i in range(batch_size):
             for t, w in enumerate(sentence_list[index % len(sentence_list)]):
-                x[i, t, word_indices[w]] = 1
-            y[i, word_indices[next_word_list[index % len(sentence_list)]]] = 1
+                x[i, t] = word_indices[w]
+            y[i] = word_indices[next_word_list[index % len(sentence_list)]]
             index = index + 1
         yield x, y
 
@@ -66,7 +66,8 @@ def generator(sentence_list, next_word_list, batch_size):
 def get_model(dropout=0.2):
     print('Build model...')
     model = Sequential()
-    model.add(Bidirectional(LSTM(128), input_shape=(SEQUENCE_LEN, len(words))))
+    model.add(Embedding(input_dim=len(words), output_dim=1024))
+    model.add(Bidirectional(LSTM(128)))
     if dropout > 0:
         model.add(Dropout(dropout))
     model.add(Dense(len(words)))
@@ -100,9 +101,9 @@ def on_epoch_end(epoch, logs):
         examples_file.write(' '.join(sentence))
 
         for i in range(50):
-            x_pred = np.zeros((1, SEQUENCE_LEN, len(words)))
+            x_pred = np.zeros((1, SEQUENCE_LEN))
             for t, word in enumerate(sentence):
-                x_pred[0, t, word_indices[word]] = 1.
+                x_pred[0, t] = word_indices[word]
 
             preds = model.predict(x_pred, verbose=0)[0]
             next_index = sample(preds, diversity)
@@ -176,7 +177,7 @@ if __name__ == "__main__":
     (sentences, next_words), (sentences_test, next_words_test) = shuffle_and_split_training_set(sentences, next_words)
 
     model = get_model()
-    model.compile(loss='categorical_crossentropy', optimizer="adam", metrics=['accuracy'])
+    model.compile(loss='sparse_categorical_crossentropy', optimizer="adam", metrics=['accuracy'])
 
     file_path = "./checkpoints/LSTM_LYRICS-epoch{epoch:03d}-words%d-sequence%d-minfreq%d-loss{loss:.4f}-acc{acc:.4f}-val_loss{val_loss:.4f}-val_acc{val_acc:.4f}" % (
         len(words),
@@ -185,7 +186,7 @@ if __name__ == "__main__":
     )
     checkpoint = ModelCheckpoint(file_path, monitor='val_acc', save_best_only=True)
     print_callback = LambdaCallback(on_epoch_end=on_epoch_end)
-    early_stopping = EarlyStopping(monitor='val_acc', patience=5)
+    early_stopping = EarlyStopping(monitor='val_acc', patience=20)
     callbacks_list = [checkpoint, print_callback, early_stopping]
 
     examples_file = open(examples, "w")
