@@ -24,8 +24,8 @@ import io
 import os
 
 # Parameters: change to experiment different configurations
-SEQUENCE_LEN = 10
-MIN_WORD_FREQUENCY = 10
+SEQUENCE_LEN = 30
+MIN_WORD_FREQUENCY = 80
 STEP = 1
 BATCH_SIZE = 32
 
@@ -66,8 +66,8 @@ def generator(sentence_list, next_word_list, batch_size):
 def get_model(dropout=0.2):
     print('Build model...')
     model = Sequential()
-    model.add(Embedding(input_dim=len(words), output_dim=1024))
-    model.add(Bidirectional(LSTM(128)))
+    model.add(Embedding(input_dim=len(words), output_dim=512))
+    model.add(Bidirectional(LSTM(512)))
     if dropout > 0:
         model.add(Dropout(dropout))
     model.add(Dense(len(words)))
