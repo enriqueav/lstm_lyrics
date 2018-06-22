@@ -12,10 +12,10 @@ Creates two files:
 As a result, both files have exactly the same number of lines (126665 in this example),
 and roughly the same number of total words (703435 vs 705279 in the example):
 
-$ python3 generate_random_lines.py ../corpora/corpus_banda.txt subcorpus.txt rnd.txt
-$ wc subcorpus.txt rnd.txt
-  126665  703435 3515098 subcorpus.txt
-  126665  705279 3523796 rnd.txt
+$ python3 generate_random_lines.py ../corpora/corpus_banda.txt banda_subset.txt random_banda.txt
+$ wc banda_subset.txt random_banda.txt
+  126665  703435 3515098 banda_subset.txt
+  126665  705279 3523796 random_banda.txt
 """
 
 import numpy as np
