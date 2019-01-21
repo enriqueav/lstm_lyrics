@@ -18,7 +18,7 @@ import sys
 import os
 from keras.models import Sequential
 from keras.layers import Dense, LSTM, Dropout, Bidirectional, Embedding
-from keras.callbacks import LambdaCallback, ModelCheckpoint, EarlyStopping
+from keras.callbacks import ModelCheckpoint, EarlyStopping
 
 SEQ_LEN = 20
 BATCH_SIZE = 32
@@ -26,7 +26,7 @@ PAD_WORD = '[PAD]'
 
 
 def process_file(file_name):
-    lines = open(file_name,'r').readlines()
+    lines = open(file_name, 'r').readlines()
     return [l.strip() for l in lines]
 
 
@@ -123,7 +123,8 @@ def confusion_matrix(sentence_list, labels_list, print_errors=False):
 if __name__ == "__main__":
     # Argument check
     if len(sys.argv) != 3:
-        print('\033[91m' + 'Argument Error!\nUsage: python3 classifier_train.py <positive_examples> <negative_examples>' + '\033[0m')
+        print('\033[91m' + 'Argument Error!\nUsage: python3 classifier_train.py'
+                           ' <positive_examples> <negative_examples>' + '\033[0m')
         exit(1)
     if not os.path.isfile(sys.argv[1]):
         print('\033[91mERROR: ' + sys.argv[1] + ' is not a file!' + '\033[0m')
@@ -152,13 +153,16 @@ if __name__ == "__main__":
 
     train_positive = labels.count(1)
     test_positive = labels_test.count(1)
-    print("Training set. Positive %d, Negative %d" % (train_positive, len(labels) - train_positive))
-    print("Test set. Positive %d, Negative %d" % (test_positive, len(labels_test)-test_positive))
+    print("Training set. Positive %d, Negative %d" %
+          (train_positive, len(labels) - train_positive))
+    print("Test set. Positive %d, Negative %d" %
+          (test_positive, len(labels_test)-test_positive))
 
     print('Build model...')
     model = get_model()
 
-    file_path = "./checkpoints/CLASSIFIER_epoch{epoch:02d}-loss{loss:.4f}-acc{acc:.4f}-val_loss{val_loss:.4f}-val_acc{val_acc:.4f}"
+    file_path = "./checkpoints/CLASSIFIER_epoch{epoch:02d}-loss{loss:.4f}-" \
+                "acc{acc:.4f}-val_loss{val_loss:.4f}-val_acc{val_acc:.4f}"
     checkpoint = ModelCheckpoint(file_path, monitor="val_acc", save_best_only=True)
     early_stopping = EarlyStopping(monitor="val_acc", patience=10)
     callbacks_list = [checkpoint, early_stopping]

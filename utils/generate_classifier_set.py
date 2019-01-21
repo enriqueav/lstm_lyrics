@@ -6,8 +6,10 @@ Usage: python3 generate_random_lines.py <path_to_corpus> <corpus_subset_txt> <ra
 Creates two files:
     -<corpus_subset_txt>: is a subset of the original corpus, containing only the lines without
                           any of the ignored words
-    -<random_txt>: is a file containing random lines, choosing random words from the vocabulary of the corpus,
-                   and also using the same probabilities of word usage and quantity of words in each line.
+    -<random_txt>: is a file containing random lines, choosing random words
+                   from the vocabulary of the corpus,
+                   and also using the same probabilities of word usage and
+                   quantity of words in each line.
 
 As a result, both files have exactly the same number of lines (126665 in this example),
 and roughly the same number of total words (703435 vs 705279 in the example):
@@ -21,7 +23,7 @@ $ wc banda_subset.txt random_banda.txt
 import numpy as np
 import sys
 import os
-from progressbar import *
+from progressbar import ProgressBar, Percentage, Bar, ETA, FileTransferSpeed
 
 # Parameter: change to experiment different configurations
 MIN_WORD_FREQUENCY = 10
@@ -66,7 +68,7 @@ def get_sizes_and_probabilites(lines):
         probabilities.append(v / (line_count+0.0))
         total_prob = total_prob + (v / (line_count+0.0))
 
-    dif = np.float32( 1 - total_prob )
+    dif = np.float32(1 - total_prob)
     values.append(1)
     probabilities.append(dif)
 
@@ -76,7 +78,8 @@ def get_sizes_and_probabilites(lines):
 if __name__ == "__main__":
     # Argument check
     if len(sys.argv) != 4:
-        print('\033[91m' + 'Argument Error!\nUsage: python3 generate_classifier_set.py <path_to_corpus> <corpus_subset_txt> <random_txt>' + '\033[0m')
+        print('\033[91m' + 'Argument Error!\nUsage: python3 generate_classifier_set.py '
+                           '<path_to_corpus> <corpus_subset_txt> <random_txt>' + '\033[0m')
         exit(1)
     if not os.path.isfile(sys.argv[1]):
         print('\033[91mERROR: ' + sys.argv[1] + ' is not a file!' + '\033[0m')
@@ -106,7 +109,7 @@ if __name__ == "__main__":
     print('Unique words after ignoring:', len(word_freq))
 
     lines = [l for l in lines if len(set(l.split()).intersection(ignored_words)) == 0]
-    print('Size in lines after ignoring %d' %(len(lines)))
+    print('Size in lines after ignoring %d' % (len(lines)))
 
     word_count, word_freq = get_count_and_freqs(lines)
 
@@ -125,13 +128,15 @@ if __name__ == "__main__":
 
     total_prob = np.sum(word_probabilities)
     # print("Total probability after adjust " + str(total_prob))
-    assert total_prob==1,"The total probability of Words is not 1. Something is wrong!"
+    assert total_prob == 1, "The total probability of Words is not 1. Something is wrong!"
 
     # get sizes probabilities
     sizes, sizes_probabilities = get_sizes_and_probabilites(lines)
-    assert np.sum(sizes_probabilities) == 1, "The total probability of Sizes is not 1. Something is wrong!"
+    assert np.sum(sizes_probabilities) == 1, "The total probability of Sizes is not 1. " \
+                                             "Something is wrong!"
 
-    print("\nGoing to create subset of the corpus, %d lines to file '%s'" % (len(lines), subcorpus_txt))
+    print("\nGoing to create subset of the corpus, %d lines to file '%s'" %
+          (len(lines), subcorpus_txt))
     subcorpus_file = open(subcorpus_txt, 'w')
     for l in lines:
         subcorpus_file.write(l + '\n')

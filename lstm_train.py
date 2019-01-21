@@ -18,7 +18,6 @@ from keras.callbacks import LambdaCallback, ModelCheckpoint, EarlyStopping
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, LSTM, Bidirectional
 import numpy as np
-import random
 import sys
 import io
 import os
@@ -120,7 +119,8 @@ def on_epoch_end(epoch, logs):
 if __name__ == "__main__":
     # Argument check
     if len(sys.argv) != 3:
-        print('\033[91m' + 'Argument Error!\nUsage: python3 lstm_train.py <path_to_corpus> <examples_txt>' + '\033[0m')
+        print('\033[91m' + 'Argument Error!\nUsage: python3 lstm_train.py '
+                           '<path_to_corpus> <examples_txt>' + '\033[0m')
         exit(1)
     if not os.path.isfile(sys.argv[1]):
         print('\033[91mERROR: ' + sys.argv[1] + ' is not a file!' + '\033[0m')
@@ -173,16 +173,17 @@ if __name__ == "__main__":
     print('Remaining sequences:', len(sentences))
 
     # x, y, x_test, y_test
-    (sentences, next_words), (sentences_test, next_words_test) = shuffle_and_split_training_set(sentences, next_words)
+    (sentences, next_words), (sentences_test, next_words_test) = shuffle_and_split_training_set(
+        sentences, next_words
+    )
 
     model = get_model()
     model.compile(loss='categorical_crossentropy', optimizer="adam", metrics=['accuracy'])
 
-    file_path = "./checkpoints/LSTM_LYRICS-epoch{epoch:03d}-words%d-sequence%d-minfreq%d-loss{loss:.4f}-acc{acc:.4f}-val_loss{val_loss:.4f}-val_acc{val_acc:.4f}" % (
-        len(words),
-        SEQUENCE_LEN,
-        MIN_WORD_FREQUENCY
-    )
+    file_path = "./checkpoints/LSTM_LYRICS-epoch{epoch:03d}-words%d-sequence%d-minfreq%d-" \
+                "loss{loss:.4f}-acc{acc:.4f}-val_loss{val_loss:.4f}-val_acc{val_acc:.4f}" % \
+                (len(words), SEQUENCE_LEN, MIN_WORD_FREQUENCY)
+
     checkpoint = ModelCheckpoint(file_path, monitor='val_acc', save_best_only=True)
     print_callback = LambdaCallback(on_epoch_end=on_epoch_end)
     early_stopping = EarlyStopping(monitor='val_acc', patience=5)
