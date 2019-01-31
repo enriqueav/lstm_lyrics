@@ -1,5 +1,5 @@
 """
-Example script to generate text from a corpus of text
+Example script to train a network to generate text with the style of a given corpus
 --By word--
 
 It is recommended to run this script on GPU, as recurrent
@@ -21,6 +21,7 @@ import numpy as np
 import sys
 import io
 import os
+import codecs
 
 # Parameters: change to experiment different configurations
 SEQUENCE_LEN = 10
@@ -60,6 +61,16 @@ def generator(sentence_list, next_word_list, batch_size):
             y[i, word_indices[next_word_list[index % len(sentence_list)]]] = 1
             index = index + 1
         yield x, y
+
+
+def print_vocabulary(words_file_path, words_set):
+    words_file = codecs.open(words_file_path, 'w', encoding='utf8')
+    for w in words_set:
+        if w != "\n":
+            words_file.write(w+"\n")
+        else:
+            words_file.write(w)
+    words_file.close()
 
 
 def get_model(dropout=0.2):
@@ -118,9 +129,9 @@ def on_epoch_end(epoch, logs):
 
 if __name__ == "__main__":
     # Argument check
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 4:
         print('\033[91m' + 'Argument Error!\nUsage: python3 lstm_train.py '
-                           '<path_to_corpus> <examples_txt>' + '\033[0m')
+                           '<path_to_corpus> <examples_txt> <vocabulary_txt>' + '\033[0m')
         exit(1)
     if not os.path.isfile(sys.argv[1]):
         print('\033[91mERROR: ' + sys.argv[1] + ' is not a file!' + '\033[0m')
@@ -128,6 +139,7 @@ if __name__ == "__main__":
 
     corpus = sys.argv[1]
     examples = sys.argv[2]
+    vocabulary = sys.argv[3]
 
     if not os.path.isdir('./checkpoints/'):
         os.makedirs('./checkpoints/')
@@ -154,6 +166,7 @@ if __name__ == "__main__":
     print('Ignoring words with frequency <', MIN_WORD_FREQUENCY)
     words = sorted(set(words) - ignored_words)
     print('Unique words after ignoring:', len(words))
+    print_vocabulary(vocabulary, words)
 
     word_indices = dict((c, i) for i, c in enumerate(words))
     indices_word = dict((i, c) for i, c in enumerate(words))
