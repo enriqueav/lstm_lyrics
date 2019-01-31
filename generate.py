@@ -84,9 +84,6 @@ if __name__ == "__main__":
                         help="The path of vocabulary used by the network.",)
     parser.add_argument("-n", "--network",
                         help="The path of the trained network.",)
-    parser.add_argument("-c", "--corpus",
-                        help="The path of the original corpus used to train the network.\n"
-                             "Only necessary if the seed is set to random",)
     parser.add_argument("-s", "--seed",
                         help="The seed used to generate the text. All the words should be part\n"
                              "of the vocabulary. Only the last SEQUENCE_LENGTH "
@@ -107,7 +104,6 @@ if __name__ == "__main__":
 
     vocabulary_file = args.vocabulary
     model_file = args.network
-    corpus = args.corpus
     seed = args.seed
     sequence_length = args.sequence_length
     diversity = args.diversity

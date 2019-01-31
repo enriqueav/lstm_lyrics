@@ -83,10 +83,7 @@ optional arguments:
   -v VOCABULARY, --vocabulary VOCABULARY
                         The path of vocabulary used by the network.
   -n NETWORK, --network NETWORK
-                        The path of the trained network.
-  -c CORPUS, --corpus CORPUS
-                        The path of the original corpus used to train the
-                        network. Only necessary if the seed is set to random
+                        The path of the trained network.=
   -s SEED, --seed SEED  The seed used to generate the text. All the words
                         should be part of the vocabulary. Only the last
                         SEQUENCE_LENGTH words are considered
